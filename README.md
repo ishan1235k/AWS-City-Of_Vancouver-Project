@@ -16,7 +16,7 @@ Ensure only high-quality data is used for analytics. Automate data cleaning usin
 ---
 
 ## Data Quality Rules
-![Data Quality Rules](https://raw.githubusercontent.com/ishan1235k/Screenshots/main/your-data-quality-rules-image.png)
+![Data Quality Rules](https://github.com/ishan1235k/Screenshots/blob/main/Screenshot%202025-06-14%20134529.png)
 
 ---
 
