@@ -11,7 +11,7 @@ Ensure only high-quality data is used for analytics. Automate data cleaning usin
 ---
 
 ## AWS Glue Job Flow
-![AWS Glue Job Flow](https://raw.githubusercontent.com/ishan1235k/Screenshots/main/your-glue-job-flow-image.png)
+![AWS Glue Job Flow](Screenshot 2025-06-14 134529.png)
 
 ---
 
