@@ -90,6 +90,3 @@ Enabled CloudTrail to log all management events for auditing and compliance.
 
 ---
 
-## Notes
-- All screenshots are loaded from my external [Screenshots repo](https://github.com/ishan1235k/Screenshots).
-- Replace `your-image-url-xxx` above with the actual raw GitHub URLs for your images.
