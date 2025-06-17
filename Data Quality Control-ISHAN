@@ -1,1 +1,98 @@
+# Data Quality and Governance Pipeline for City of Vancouver Employee Remuneration Data
+
+## Project Description
+
+This project implements a data quality control and governance pipeline for the City of Vancouver’s Employee Remuneration and Expenses dataset. It uses AWS Glue Studio to validate, clean, and organize data before it is stored for analysis. By applying data quality rules (**completeness**, **uniqueness**, **valid values**) and enforcing data security measures (**encryption**, **versioning**, **replication**), the pipeline ensures that only high-quality, trusted data is retained for reporting while bad data is isolated for review. The solution also incorporates monitoring and auditing through AWS CloudWatch and CloudTrail to maintain transparency and control over the data workflow.
+
+## Project Title
+
+**Data Quality Control and Governance for City of Vancouver Employee Remuneration Dataset**
+
+## Objective
+
+The objective of this project is to ensure high data quality and security for the City of Vancouver’s employee remuneration data before it is used in analytics. By integrating data quality checks into the ETL process, the project aims to automatically filter out incomplete or invalid records and route them for review, allowing only reliable data to enter the analytics repository. Additionally, the project aims to secure the data pipeline (through **encryption**, **backups**, and **version control**) and provide monitoring of data and resource usage. This guarantees that downstream analyses and reports are based on consistent, accurate data, and that the data management process adheres to governance and compliance standards.
+
+## Dataset
+
+The dataset used is the City of Vancouver Employee Remuneration and Expenses dataset (publicly available via the city’s Open Data portal). It contains records of city employees earning over $75,000 per year, including the following fields:
+
+- **Year**: The fiscal year of the report (e.g., 2018, 2019, … 2023).
+- **Name**: Employee name (last, first).
+- **Department**: The department or division where the employee works.
+- **Title**: The job title/position of the employee.
+- **Remuneration**: Total remuneration (salary and benefits) for that year (in Canadian dollars).
+
+## Methodology
+
+**Overview:** The data quality control process was implemented as an AWS Glue Studio ETL job. The approach can be summarized in several key steps, focusing on data quality validation and secure data management. Before running the ETL job, the cloud storage environment was configured with strong security controls. Then, the Glue job was designed to enforce data quality rules and route data accordingly. Finally, monitoring tools were put in place to observe the pipeline’s operations and costs. The methodology is detailed below.
+
+### 1. Environment Setup – Secure Data Lake Configuration
+
+Prior to data processing, we set up Amazon S3 buckets to act as the data lake zones:
+
+- **Raw Bucket**: to store incoming raw data from the City of Vancouver.
+- **Clean Bucket**: to store intermediate and cleansed data.
+- **Curated Bucket**: to store final curated data ready for analysis.
+
+Each S3 bucket was configured with server-side encryption (**SSE-KMS**) using a customer-managed AWS KMS key. Three separate KMS keys were created (e.g., one per bucket: **RawBucketKey**, **CleanBucketKey**, **CuratedBucketKey**) to allow fine-grained control and auditing for each data zone. Server-side encryption using KMS ensures all data at rest is encrypted and access to the decryption keys can be controlled. We also enabled S3 bucket **versioning** on all buckets so that any changes or deletions of objects can be tracked and old versions recovered if needed. This protects against accidental deletions or corruption by maintaining a history of object versions. Additionally, for extra durability, S3 **replication** was configured on the clean data bucket to automatically replicate its contents to a backup location (within the same region). The replicated data remains encrypted with the same KMS key. This replication serves as a disaster recovery measure – if anything happens to the primary clean data bucket, a copy exists elsewhere, ensuring high availability of the cleansed data.
+
+### 2. Data Ingestion (Raw Data Loading)
+
+The ETL job begins by ingesting the raw dataset from the City of Vancouver into the Raw S3 bucket. This can be done by uploading the CSV file to the raw bucket (e.g., via the AWS web console or an automated fetch from the open data source). AWS Glue then reads the data from the raw S3 location. At this stage, the raw data is simply loaded as-is into the pipeline. The schema is inferred or defined in the AWS Glue Data Catalog (Year, Name, Department, Title, Remuneration, Expenses as described above).
+
+### 3. Data Quality Validation
+
+A critical step in the pipeline is the data quality check using AWS Glue’s Data Quality transform. In AWS Glue Studio, a Data Quality node was added to the job’s workflow, enabling the definition of custom quality rules. We defined multiple rules to enforce data quality principles:
+
+- **Completeness**: Verify that key fields are not missing. For example, each record must have a Year, Name, Department, Title, and Remuneration present. Any row with null or empty values in these essential columns fails the completeness check.
+- **Uniqueness**: Ensure no duplicate records exist for the combination of critical fields (such as Year + Name). This helps catch any accidental double entries of the same employee’s data for a year. Every (Year, Name) pair should be unique in the dataset.
+- **Validity (Value Range and Format)**: Check that values fall within expected ranges and formats. For instance, Year should be a four-digit number within a plausible range (e.g., 2000–2025, given the context). Remuneration and Expenses should be numeric and non-negative (and in a realistic range — e.g., Expenses shouldn’t be an extremely large outlier beyond expected limits). This rule catches any obvious anomalies or typos (such as a negative expense or a year entered as 0219 instead of 2019).
+
+These rules were configured in the Glue Data Quality transform using Glue Studio’s interface. When the job runs, the Data Quality transform automatically evaluates each incoming row against all the defined rules. The result of this transform is that each record is tagged as **“Passed”** (if it meets all quality criteria) or **“Failed”** (if it violates one or more rules). Behind the scenes, AWS Glue’s data quality feature generates a metrics report on how many records passed/failed each rule, enabling transparency into the data quality distribution.
+
+### 4. Routing – Separating Accepted and Rejected Data
+
+After validation, the pipeline uses a Route node to split the data flow based on the quality results. The Route transform in AWS Glue Studio is configured to send records down different paths depending on a condition – in this case, the condition is whether the record passed all data quality checks or not. We set up two branches:
+
+- **Accepted Data branch**: Records that passed all quality rules continue through the main ETL stream.
+- **Rejected Data branch**: Records that failed any quality rule are diverted to a separate stream for rejected data.
+
+This routing mechanism ensures that only high-quality data makes it to the final dataset, while any problematic records are cleanly isolated. The rejected records are not discarded; instead, they are captured for later review and remediation.
+
+### 5. Processing and Storing Accepted (Clean) Data
+
+The records on the Accepted Data branch undergo any necessary transformations or cleaning steps before final storage. This includes applying a schema alignment (using a Glue ApplyMapping or similar transform) to ensure the data types and column names match the target schema expected in the curated dataset. Once formatted, it is loaded into the **Curated S3 bucket**, written in a chosen format (e.g., Parquet or CSV), encrypted and versioned.
+
+### 6. Handling Rejected Data
+
+The rejected records are stored separately in S3 along with details on why they were rejected. This repository serves as a quarantine zone and provides an audit trail.
+
+### 7. Monitoring and Data Governance
+
+- **AWS CloudWatch Dashboard**: Custom dashboard monitoring metrics, storage, and costs.
+- **Cost Alarms**: Alerts for unexpected cost overruns.
+- **AWS CloudTrail Logging**: Captures all management events for audit purposes.
+
+*Screenshot suggestions: Include an AWS Glue Studio job workflow diagram here to illustrate the ETL pipeline with its Quality transform and branches. Also consider a screenshot of the Data Quality rules configuration window showing the completeness, uniqueness, and validity rules.*
+
+## Tools and Technologies
+
+- **AWS Glue Studio**
+- **AWS Glue Data Quality**
+- **Amazon S3**
+- **AWS Key Management Service (KMS)**
+- **AWS CloudWatch**
+- **AWS CloudTrail**
+- **Amazon SNS**
+- **AWS Athena (optional)**
+
+## Deliverables
+
+- **Data Quality ETL Pipeline**
+- **Clean Curated Dataset**
+- **Rejected Data Archive**
+- **Secure Data Storage Setup**
+- **Monitoring Dashboard & Alerts**
+- **Audit Logs**
+- **Documentation and Repository**
 
