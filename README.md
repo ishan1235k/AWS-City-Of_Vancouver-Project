@@ -1,4 +1,4 @@
-# City of Vancouver Employee Data Quality Control
+# City of Vancouver Employee Data Security and Quality Control
 
 This project implements a data quality control pipeline for the City of Vancouver’s Employee Remuneration and Expenses dataset using AWS Glue Studio. The pipeline ensures data accuracy by applying completeness, uniqueness, and value validation rules. It also ensures data security through encryption, versioning, replication, and enables governance through monitoring and auditing.
 
@@ -66,7 +66,9 @@ Defined completeness, uniqueness, and valid value range rules in the Glue Data Q
 
 ## Route Transform Results
 Configured routing to send passed records to curated data and failed records to rejected data S3 location.
-![Route Transform](https://github.com/ishan1235k/Screenshots/blob/main/Screenshot%202025-06-15%20000758.png)
+![Route Transform](https://github.com/ishan1235k/Screenshots/blob/main/Screenshot%202025-06-15%20000758.png)![Route Transform](https://github.com/ishan1235k/Screenshots/blob/main/Screenshot%202025-06-21%20193957.png)
+
+
 
 ---
 
